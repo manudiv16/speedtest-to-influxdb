@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+
+  influxdb:
+    image: "influxdb:latest"
+    hostname: "influxdb"
+    environment:
+    - "INFLUXDB_DB=network_latency"
+    networks:
+    - net_latency
+    volumes:
+    - "influxdb:/var/lib/influxdb"
+
+  telegraf:
+    image: "telegraf:latest"
+    hostname: "telegraf"
+    networks:
+    - net_latency
+    volumes:
+    - "./config/telegraf:/etc/telegraf:ro"
+    - "./config/entrypoint_telegraf.sh:/entrypoint.sh:ro"
+
+  grafana:
+    image: "grafana/grafana:latest"
+    hostname: "grafana"
+    environment:
+    - "GF_SECURITY_ADMIN_PASSWORD=CHANGEME"
+    - "GF_AUTH_ANONYMOUS_ENABLED=true"
+    networks:
+    - net_latency
+    ports:
+    - "3000:3000"
+    volumes:
+    - "./config/grafana/provisioning:/etc/grafana/provisioning"
+    
+  speedtest-influx:
+    build: .
+    hostname: "speedtest"
+    networks:
+    - net_latency
+    environment: 
+    - "INFLUX_DB_ADDRESS=influxdb"
+    - "INFLUX_DB_PORT=8086"
+    - "INFLUX_DB_USER=admin"
+    - "INFLUX_DB_PASSWORD=foobar"
+    - "INFLUX_DB_DATABASE=network_latency"
+    - "SPEEDTEST_INTERVAL=1800"
+    - "SPEEDTEST_FAIL_INTERVAL=10"
+
+networks:
+  net_latency:
+volumes:
+  influxdb:
